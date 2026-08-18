@@ -17,18 +17,17 @@ export const sendEmail = async({email, emailType, userId}:any) => {
         }
 
         var transport = nodemailer.createTransport({
-            host: "sandbox.smtp.mailtrap.io",
-            port: 2525,
+            host: process.env.MAILTRAP_HOST,
+            port: parseInt(process.env.MAILTRAP_PORT || "2525"),
             auth: {
-              user: "3fd364695517df",
-              pass: "7383d58fd399cf"
-              //TODO: add these credentials to .env file
+              user: process.env.MAILTRAP_USER,
+              pass: process.env.MAILTRAP_PASS
             }
           });
 
 
         const mailOptions = {
-            from: 'hitesh@gmail.com',
+            from: process.env.EMAIL_FROM,
             to: email,
             subject: emailType === "VERIFY" ? "Verify your email" : "Reset your password",
             html: `<p>Click <a href="${process.env.DOMAIN}/verifyemail?token=${hashedToken}">here</a> to ${emailType === "VERIFY" ? "verify your email" : "reset your password"}
@@ -36,8 +35,7 @@ export const sendEmail = async({email, emailType, userId}:any) => {
             </p>`
         }
 
-        const mailresponse = await transport.sendMail
-        (mailOptions);
+        const mailresponse = await transport.sendMail(mailOptions);
         return mailresponse;
 
     } catch (error:any) {

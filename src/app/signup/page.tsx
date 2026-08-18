@@ -23,12 +23,14 @@ export default function SignupPage() {
             setLoading(true);
             const response = await axios.post("/api/users/signup", user);
             console.log("Signup success", response.data);
+            toast.success("Signup successful! Please verify your email.");
             router.push("/login");
             
         } catch (error:any) {
-            console.log("Signup failed", error.message);
+            console.log("Signup failed", error.response?.data?.error || error.message);
             
-            toast.error(error.message);
+            const errorMsg = error.response?.data?.error || error.message || "Signup failed";
+            toast.error(errorMsg);
         }finally {
             setLoading(false);
         }

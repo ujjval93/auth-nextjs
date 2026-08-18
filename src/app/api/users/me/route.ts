@@ -4,9 +4,8 @@ import { NextRequest, NextResponse } from "next/server";
 import User from "@/models/userModel";
 import { connect } from "@/db/db";
 
-connect();
-
 export async function GET(request:NextRequest){
+    await connect();
 
     try {
         const userId = await getDataFromToken(request);

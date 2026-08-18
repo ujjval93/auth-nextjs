@@ -4,40 +4,60 @@ import {NextResponse, NextRequest} from 'next/server';
 import bcrypt from 'bcryptjs';
 import {sendEmail} from '@/helpers/mailer';
 
-connect();
-
 export async function POST(req: NextRequest) {
     try {
-        const reqBody = await req.json();
-        const {name, email, password} = reqBody;
+        await connect();
         
-        //check if user already exists
-        const user = await User.findOne({email});
-        if (user) {
-            return NextResponse.json({error: 'User already exists'}, {status: 400});
+        const reqBody = await req.json();
+        const {username, email, password} = reqBody;
+        
+        // Check if username already exists
+        const existingUsername = await User.findOne({username});
+        if (existingUsername) {
+            return NextResponse.json({error: 'Username already exists'}, {status: 400});
+        }
+        
+        // Check if email already exists
+        const existingEmail = await User.findOne({email});
+        if (existingEmail) {
+            return NextResponse.json({error: 'Email already exists'}, {status: 400});
         }
 
-        // hash the password
+        // Hash the password
         const salt = await bcrypt.genSalt(10);
         const hashedPassword = await bcrypt.hash(password, salt);
 
         const newUser = new User({
-            name,
+            username,
             email,
             password: hashedPassword
         });
 
         const savedUser = await newUser.save();
         
-        //send verification email
+        // Send verification email
         await sendEmail({email, emailType: 'VERIFY', userId: savedUser._id});
 
         return NextResponse.json({
             message: 'User created successfully',
             success: true,
-            savedUser
+            user: {
+                id: savedUser._id,
+                username: savedUser.username,
+                email: savedUser.email,
+                isVerified: savedUser.isVerified
+            }
         });
     } catch (error: any) {
+        console.error("SIGNUP ERROR:", error.message);
+
+        // Handle MongoDB E11000 duplicate key error
+        if (error.code === 11000) {
+            const field = Object.keys(error.keyPattern)[0];
+            const message = field === 'username' ? 'Username already exists' : 'Email already exists';
+            return NextResponse.json({error: message}, {status: 400});
+        }
+
         return NextResponse.json({
             error: error.message}, {status: 500});
     }
